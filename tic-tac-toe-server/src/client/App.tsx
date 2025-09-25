@@ -4,14 +4,6 @@ import {type GameState} from './tictactoe'
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
 
 export default function App() {
-  // const [gameState, setGameState] = useState<GameState>(initialState)
-
-  // function cellClicked(index: number) {
-  //   if (gameState.winner === null) {
-  //     setGameState(makeMove(gameState, index))
-  //   }
-  // }
-
   const queryClient = useQueryClient()
   const {data: gameState, isLoading} = useQuery({
     queryKey: ['game'],
@@ -42,7 +34,7 @@ export default function App() {
 
   console.log(gameState)
 
-    if (isLoading) {
+  if (isLoading) {
     return <div>Loading...</div>
   }
 
@@ -51,9 +43,12 @@ export default function App() {
     <h3>{showStatus()}</h3>
     <div className='grid'>
       {gameState.board.map((cell: number, index: number) =>
-        <button key={index} onClick={() => gameState.winner === null ? mutate(index) : null}>
+        <button className='rounded-2xl' key={index} onClick={() => gameState.winner === null ? mutate(index) : null}>
           {cell}
         </button>)}
+    </div>
+    <div className='flex justify-center m-8'>
+      <button className='px-6 py-2 rounded-full' onClick={() => mutate(9)}>Reset</button>
     </div>
   </>
 }

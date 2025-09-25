@@ -46,6 +46,13 @@ function makeMove(prev: GameState, index: number) {
          newState.winner = 'draw'
     }
 
+    //reset
+    if (index === 9) {
+      newState.currentPlayer = 'X'
+      newState.winner = null
+      newState.board = [null, null, null, null, null, null, null, null, null]
+    }
+
     return newState  
 }
 
