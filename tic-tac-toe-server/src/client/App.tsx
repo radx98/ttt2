@@ -1,54 +1,108 @@
-import { useState } from 'react'
 import './App.css'
-import {type GameState} from './tictactoe'
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
+import {useState} from 'react'
 
 export default function App() {
+  const [gameId, setGameId] = useState<string | null>(null)
   const queryClient = useQueryClient()
-  const {data: gameState, isLoading} = useQuery({
-    queryKey: ['game'],
-    queryFn: async () => {
-      const res = await fetch('http://localhost:3000/game')
-      if (!res.ok) throw new Error('Failed to fetch game')
-      return res.json()
-    }
-  })
 
-  const {mutate} = useMutation({mutationFn: async (index: number) => {
-    await fetch("/game/move", {  
-      method: "POST",  
-      headers: { "Content-Type": "application/json" },  
-      body: JSON.stringify({ index })
+  function GameList({onSelect}: {onSelect: (id: string) => void}) {
+    const {data: gameList, isLoading} = useQuery({
+      queryKey: ['games'],
+      queryFn: async () => {
+        const res = await fetch('/games')
+        if (!res.ok) throw new Error('Failed to fetch games')
+        return res.json()
+      }
     })
-  }, onSuccess: () => queryClient.invalidateQueries({queryKey: ["game"]}) })
 
-  function showStatus() {
-    if (gameState.winner != null && gameState.winner != 'draw') {
-      return `${gameState.winner} won!`
-    } else if (gameState.winner === 'draw') {
-      return "That's a draw :("
-    } else {
-      return `${gameState.currentPlayer}'s turn...`
+    const createGame = useMutation({
+      mutationFn: async () => {
+        const res = await fetch('/game/new', { method: 'POST' })
+        if (!res.ok) throw new Error('Failed to create game')
+        return res.json()
+      },
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: ['games'] })
+        onSelect(data.id)
+      }
+    })
+
+    if (isLoading) return <div>Loading...</div>
+
+    return (
+      <>
+        <h1>TIC-TAC-TOE</h1>
+        <div className='flex flex-col justify-center mt-8 gap-2'>
+          <button className='px-6 py-2 rounded-full mb-12 self-center' onClick={() => createGame.mutate()}>New Game</button>
+          {gameList.map((id: string) => (
+            <button className='px-6 py-2 rounded-2xl max-w-64' key={id} onClick={() => onSelect(id)}>
+              {id}
+            </button>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  function GameBoard({ gameId }: { gameId: string }) {
+    const { data: gameState, isLoading } = useQuery({
+      queryKey: ['game', gameId],
+      queryFn: async () => {
+        const res = await fetch(`/game/${gameId}`)
+        if (!res.ok) throw new Error('Failed to fetch game')
+        return res.json()
+      }
+    })
+
+    const move = useMutation({
+      mutationFn: async (index: number) => {
+        const res = await fetch(`/game/${gameId}/move`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ index })
+        })
+        if (!res.ok) throw new Error('Failed to make move')
+        return res.json()
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['game', gameId] })
+      }
+    })
+
+    if (isLoading || !gameState) return <div>Loading...</div>
+
+    function showStatus() {
+      if (gameState.winner && gameState.winner !== 'draw') {
+        return `${gameState.winner} won!`
+      } else if (gameState.winner === 'draw') {
+        return "That's a draw :("
+      } else {
+        return `${gameState.currentPlayer}'s turn...`
+      }
     }
+
+    return <>
+      <h1>TIC-TAC-TOE</h1>
+      <h3>{showStatus()}</h3>
+      <div className='grid'>
+        {gameState.board.map((cell: 'X' | 'O' | null, index: number) => (
+          <button
+            className='rounded-2xl'
+            key={index}
+            onClick={() => (gameState.winner == null && cell == null ? move.mutate(index) : null)}
+          >
+            {cell}
+          </button>
+        ))}
+      </div>
+      <div className='flex justify-center m-8'>
+        <button className='px-6 py-2 rounded-full' onClick={() => move.mutate(9)}>
+          Reset
+        </button>
+      </div>
+    </>
   }
 
-  console.log(gameState)
-
-  if (isLoading) {
-    return <div>Loading...</div>
-  }
-
-  return <>
-    <h1>TIC-TAC-TOE</h1>
-    <h3>{showStatus()}</h3>
-    <div className='grid'>
-      {gameState.board.map((cell: number, index: number) =>
-        <button className='rounded-2xl' key={index} onClick={() => gameState.winner === null ? mutate(index) : null}>
-          {cell}
-        </button>)}
-    </div>
-    <div className='flex justify-center m-8'>
-      <button className='px-6 py-2 rounded-full' onClick={() => mutate(9)}>Reset</button>
-    </div>
-  </>
+  return gameId === null ? <GameList onSelect={setGameId} /> : <GameBoard gameId={gameId} />
 }
