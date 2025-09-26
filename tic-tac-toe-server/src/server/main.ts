@@ -1,9 +1,14 @@
 import express from "express"
 import ViteExpress from "vite-express"
 import { v4 as uuidv4 } from 'uuid'
+import {drizzle} from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
+import { games } from '../db/schema.ts'
 
 const app = express()
 app.use(express.json())
+const client = postgres(process.env.DATABASE_URL!)
+export const db = drizzle(client)
 
 // structure of game state
 type Player = 'X' | 'O'
@@ -25,12 +30,12 @@ const initialState: GameState = {
 }
 
 // game storage
-const games = new Map()
+// const games = new Map()
 
 // create new game, generate id, add to 'games'
-function createGameState() {
+async function createGameState() {
   const newGame = {...initialState, id: uuidv4()}
-  games.set(newGame.id, newGame)
+  await db.insert(games).values(newGame)
   return newGame
 }
 
