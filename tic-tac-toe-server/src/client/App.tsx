@@ -28,7 +28,30 @@ export default function App() {
       }
     })
 
+    const deleteAll = useMutation({
+      mutationFn: async () => {
+        const res = await fetch('/games/del', { method: 'POST' })
+        if (!res.ok) throw new Error('Failed to delete all games')
+        return res.json()
+      },
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: ['games'] })
+        onSelect(data.id)
+        setGameId(null)
+      }
+    })
+
     if (isLoading) return <div>Loading...</div>
+
+    function showDelButton() {
+      if (gameList.length != 0) {
+          return (
+            <button className='px-6 py-2 rounded-full' onClick={() => deleteAll.mutate()}>
+              Delete all
+            </button>
+          )
+      }
+  }
 
     return (
       <>
@@ -40,6 +63,9 @@ export default function App() {
               {id}
             </button>
           ))}
+          <div className='flex justify-center m-8'>
+            {showDelButton()}
+          </div>
         </div>
       </>
     )
@@ -63,6 +89,9 @@ export default function App() {
           body: JSON.stringify({ index })
         })
         if (!res.ok) throw new Error('Failed to make move')
+        if (index === 9) {
+          setGameId(null)
+        }
         return res.json()
       },
       onSuccess: () => {
@@ -98,7 +127,7 @@ export default function App() {
       </div>
       <div className='flex justify-center m-8'>
         <button className='px-6 py-2 rounded-full' onClick={() => move.mutate(9)}>
-          Reset
+          Delete Game
         </button>
       </div>
     </>
