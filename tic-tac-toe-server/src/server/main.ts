@@ -91,6 +91,12 @@ app.post("/game/new", async (_, res) => {
   res.json(newGame)
 })
 
+// delete all games
+app.post("/games/del", async (_, res) => {
+  await db.delete(games)
+  res.json({ success: true })
+})
+
 // send back a game from the list
 app.get("/game/:id", async (req, res) => {
   const [gameToLoad] = await db.select().from(games).where(eq(games.id, req.params.id))
@@ -101,9 +107,14 @@ app.get("/game/:id", async (req, res) => {
 app.post("/game/:id/move", async (req, res) => {
   const currentGameId = req.params.id
   const {index} = req.body
-  const [currentGameState] = await db.select().from(games).where(eq(games.id, currentGameId))
-  const move = await makeMove(currentGameState, index, currentGameId)
-  res.json(move)
+  if (index != 9) {
+    const [currentGameState] = await db.select().from(games).where(eq(games.id, currentGameId))
+    const move = await makeMove(currentGameState, index, currentGameId)
+    res.json(move)
+  } else {
+    const delRow = await db.delete(games).where(eq(games.id, currentGameId))
+    res.json(delRow)
+  }
 })
 
 ViteExpress.listen(app, 3000, () =>
