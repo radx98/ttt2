@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import {drizzle} from 'drizzle-orm/postgres-js'
 import {eq} from 'drizzle-orm'
 import postgres from 'postgres'
-import { games } from '../db/schema'
+import { games } from '../db/schema.ts'
 
 const app = express()
 app.use(express.json())
@@ -93,7 +93,7 @@ app.post("/game/new", async (_, res) => {
 
 // send back a game from the list
 app.get("/game/:id", async (req, res) => {
-  const gameToLoad = await db.select().from(games).where(eq(games.id, req.params.id))
+  const [gameToLoad] = await db.select().from(games).where(eq(games.id, req.params.id))
   res.json(gameToLoad)
 })
 
@@ -102,7 +102,7 @@ app.post("/game/:id/move", async (req, res) => {
   const currentGameId = req.params.id
   const {index} = req.body
   const [currentGameState] = await db.select().from(games).where(eq(games.id, currentGameId))
-  const move = makeMove(currentGameState, index, currentGameId)
+  const move = await makeMove(currentGameState, index, currentGameId)
   res.json(move)
 })
 
