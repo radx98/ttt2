@@ -1,6 +1,7 @@
 import './App.css'
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
 import {useState} from 'react'
+import {adj, nouns} from './names'
 
 export default function App() {
   const [gameId, setGameId] = useState<string | null>(null)
@@ -51,16 +52,25 @@ export default function App() {
             </button>
           )
       }
-  }
+    }
+
+    function generateNames(gameList: string[], adj: string[], nouns: string[]) {
+      return gameList.map(uuid => {
+        const idx1 = parseInt(uuid.slice(0, 8), 16) % adj.length
+        const idx2 = parseInt(uuid.slice(0, 8), 16) % nouns.length
+        return `${adj[idx1]} ${nouns[idx2]}`
+      })
+    }
+    const names = generateNames(gameList, adj, nouns)
 
     return (
       <>
         <h1>TIC-TAC-TOE</h1>
         <div className='flex flex-col justify-center mt-8 gap-2'>
           <button className='px-6 py-2 rounded-full mb-12 self-center' onClick={() => createGame.mutate()}>New Game</button>
-          {gameList.map((id: string) => (
+          {gameList.map((id: string, index: number) => (
             <button className='px-6 py-2 rounded-2xl max-w-64' key={id} onClick={() => onSelect(id)}>
-              {id}
+              {names[index]}
             </button>
           ))}
           <div className='flex justify-center m-8'>
